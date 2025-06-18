@@ -4,6 +4,8 @@ import { GameState, ValidationResult } from './types';
 import { getCardById } from './data/cardTypes';
 import { ChallengeCard } from './components/ChallengeCard';
 import { CardInput } from './components/CardInput';
+import { NumericInput } from './components/NumericInput';
+import { InputMethodToggle } from './components/InputMethodToggle';
 import { ValidationResult as ValidationResultComponent } from './components/ValidationResult';
 import { GameStats } from './components/GameStats';
 import { Code, Play, RotateCcw } from 'lucide-react';
@@ -19,18 +21,21 @@ function App() {
   const [currentSequence, setCurrentSequence] = useState<number[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [inputMethod, setInputMethod] = useState<'visual' | 'numeric'>('visual');
 
   const currentChallenge = challenges[gameState.currentChallenge];
 
-  const validateSequence = () => {
-    if (currentSequence.length === 0) return;
+  const validateSequence = (sequence?: number[]) => {
+    const sequenceToValidate = sequence || currentSequence;
+    
+    if (sequenceToValidate.length === 0) return;
 
-    const isCorrect = JSON.stringify(currentSequence) === JSON.stringify(currentChallenge.correctSequence);
+    const isCorrect = JSON.stringify(sequenceToValidate) === JSON.stringify(currentChallenge.correctSequence);
     
     const correctPositions: number[] = [];
     const incorrectPositions: number[] = [];
     
-    currentSequence.forEach((cardId, index) => {
+    sequenceToValidate.forEach((cardId, index) => {
       if (currentChallenge.correctSequence[index] === cardId) {
         correctPositions.push(index);
       } else {
@@ -40,7 +45,7 @@ function App() {
 
     // Get card types for better messaging
     const expectedCards = currentChallenge.correctSequence.map(id => getCardById(id)).filter(Boolean);
-    const actualCards = currentSequence.map(id => getCardById(id)).filter(Boolean);
+    const actualCards = sequenceToValidate.map(id => getCardById(id)).filter(Boolean);
 
     const result: ValidationResult = {
       isCorrect,
@@ -55,6 +60,11 @@ function App() {
 
     setValidationResult(result);
     setShowResult(true);
+
+    // Update current sequence if it was passed as parameter (from numeric input)
+    if (sequence) {
+      setCurrentSequence(sequence);
+    }
 
     // Update game state
     const difficultyMultiplier = currentChallenge.difficulty === 'easy' ? 1 : 
@@ -102,6 +112,10 @@ function App() {
       completedChallenges: []
     });
     resetChallenge();
+  };
+
+  const handleNumericSubmit = (sequence: number[]) => {
+    validateSequence(sequence);
   };
 
   return (
@@ -167,24 +181,42 @@ function App() {
                 </div>
               </div>
 
-              {/* Card Input */}
+              {/* Input Method Toggle */}
+              <InputMethodToggle
+                method={inputMethod}
+                onMethodChange={setInputMethod}
+                disabled={showResult && validationResult?.isCorrect === true}
+              />
+
+              {/* Input Methods */}
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Monte a Sequência de Cartas
+                  {inputMethod === 'visual' ? 'Monte a Sequência de Cartas' : 'Digite a Sequência Numérica'}
                 </h3>
-                <CardInput
-                  sequence={currentSequence}
-                  onSequenceChange={setCurrentSequence}
-                  maxCards={currentChallenge.correctSequence.length}
-                  disabled={showResult && validationResult?.isCorrect === true}
-                />
+                
+                {inputMethod === 'visual' ? (
+                  <CardInput
+                    sequence={currentSequence}
+                    onSequenceChange={setCurrentSequence}
+                    maxCards={currentChallenge.correctSequence.length}
+                    disabled={showResult && validationResult?.isCorrect === true}
+                  />
+                ) : (
+                  <NumericInput
+                    onSequenceSubmit={handleNumericSubmit}
+                    expectedLength={currentChallenge.correctSequence.length}
+                    disabled={showResult && validationResult?.isCorrect === true}
+                  />
+                )}
               </div>
 
-              {/* Validate Button */}
-              {currentSequence.length === currentChallenge.correctSequence.length && !showResult && (
+              {/* Validate Button (only for visual method) */}
+              {inputMethod === 'visual' && 
+               currentSequence.length === currentChallenge.correctSequence.length && 
+               !showResult && (
                 <div className="text-center mb-6">
                   <button
-                    onClick={validateSequence}
+                    onClick={() => validateSequence()}
                     className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center space-x-2 mx-auto"
                   >
                     <Play className="w-5 h-5" />
