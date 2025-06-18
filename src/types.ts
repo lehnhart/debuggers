@@ -1,9 +1,18 @@
+export interface CardType {
+  id: number;
+  name: string;
+  description: string;
+  color: string;
+  bgColor: string;
+  category: 'data' | 'operation' | 'control' | 'input' | 'output';
+}
+
 export interface Challenge {
   id: number;
   title: string;
   description: string;
   problem: string;
-  correctSequence: number[];
+  correctSequence: number[]; // Array of card IDs
   explanation: string;
   difficulty: 'easy' | 'medium' | 'hard';
   category: string;
@@ -21,4 +30,6 @@ export interface ValidationResult {
   message: string;
   correctPositions: number[];
   incorrectPositions: number[];
+  expectedCards?: CardType[];
+  actualCards?: CardType[];
 }

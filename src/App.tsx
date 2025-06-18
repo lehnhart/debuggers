@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { challenges } from './data/challenges';
 import { GameState, ValidationResult } from './types';
+import { getCardById } from './data/cardTypes';
 import { ChallengeCard } from './components/ChallengeCard';
 import { CardInput } from './components/CardInput';
 import { ValidationResult as ValidationResultComponent } from './components/ValidationResult';
@@ -29,31 +30,40 @@ function App() {
     const correctPositions: number[] = [];
     const incorrectPositions: number[] = [];
     
-    currentSequence.forEach((card, index) => {
-      if (currentChallenge.correctSequence[index] === card) {
+    currentSequence.forEach((cardId, index) => {
+      if (currentChallenge.correctSequence[index] === cardId) {
         correctPositions.push(index);
       } else {
         incorrectPositions.push(index);
       }
     });
 
+    // Get card types for better messaging
+    const expectedCards = currentChallenge.correctSequence.map(id => getCardById(id)).filter(Boolean);
+    const actualCards = currentSequence.map(id => getCardById(id)).filter(Boolean);
+
     const result: ValidationResult = {
       isCorrect,
       message: isCorrect 
         ? `Perfeito! Você resolveu o desafio "${currentChallenge.title}" corretamente!`
-        : `Sequência incorreta. ${incorrectPositions.length} posição(ões) precisam ser corrigidas.`,
+        : `Sequência incorreta. ${incorrectPositions.length} carta(s) precisam ser corrigidas.`,
       correctPositions,
-      incorrectPositions
+      incorrectPositions,
+      expectedCards,
+      actualCards
     };
 
     setValidationResult(result);
     setShowResult(true);
 
     // Update game state
+    const difficultyMultiplier = currentChallenge.difficulty === 'easy' ? 1 : 
+                                currentChallenge.difficulty === 'medium' ? 2 : 3;
+    
     setGameState(prev => ({
       ...prev,
       attempts: prev.attempts + 1,
-      score: isCorrect ? prev.score + (100 * currentChallenge.difficulty === 'easy' ? 1 : currentChallenge.difficulty === 'medium' ? 2 : 3) : prev.score,
+      score: isCorrect ? prev.score + (100 * difficultyMultiplier) : prev.score,
       completedChallenges: isCorrect && !prev.completedChallenges.includes(currentChallenge.id) 
         ? [...prev.completedChallenges, currentChallenge.id]
         : prev.completedChallenges
@@ -102,12 +112,12 @@ function App() {
           <div className="flex items-center justify-center space-x-3 mb-4">
             <Code className="w-10 h-10 text-blue-600" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Algorithm Game Validator
+              Algorithm Card Game
             </h1>
           </div>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Valide suas sequências de cartas e domine os desafios algorítmicos! 
-            Cada carta possui um número de identificação único.
+            Monte sequências lógicas usando cartas de diferentes tipos para resolver desafios algorítmicos! 
+            Cada carta representa um tipo de operação ou dado específico.
           </p>
         </header>
 
@@ -191,6 +201,8 @@ function App() {
                   onTryAgain={resetChallenge}
                   onNextChallenge={nextChallenge}
                   hasNextChallenge={gameState.currentChallenge < challenges.length - 1}
+                  correctSequence={currentChallenge.correctSequence}
+                  userSequence={currentSequence}
                 />
               )}
             </div>
