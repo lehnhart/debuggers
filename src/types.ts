@@ -23,6 +23,7 @@ export interface GameState {
   score: number;
   attempts: number;
   completedChallenges: number[];
+  challengeAttempts: { [challengeId: number]: number }; // Track attempts per challenge
 }
 
 export interface ValidationResult {
@@ -32,4 +33,6 @@ export interface ValidationResult {
   incorrectPositions: number[];
   expectedCards?: CardType[];
   actualCards?: CardType[];
+  attemptsLeft?: number;
+  showAnswerOption?: boolean;
 }
