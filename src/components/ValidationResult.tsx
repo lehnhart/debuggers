@@ -1,7 +1,7 @@
 import React from 'react';
 import { ValidationResult as ValidationResultType } from '../types';
 import { getCardById } from '../data/cardTypes';
-import { CheckCircle, XCircle, AlertCircle, Lightbulb } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Lightbulb, Eye, EyeOff } from 'lucide-react';
 
 interface ValidationResultProps {
   result: ValidationResultType | null;
@@ -11,6 +11,8 @@ interface ValidationResultProps {
   hasNextChallenge: boolean;
   correctSequence: number[];
   userSequence: number[];
+  showAnswer?: boolean;
+  maxAttemptsReached?: boolean;
 }
 
 export const ValidationResult: React.FC<ValidationResultProps> = ({
@@ -20,7 +22,9 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
   onNextChallenge,
   hasNextChallenge,
   correctSequence,
-  userSequence
+  userSequence,
+  showAnswer = false,
+  maxAttemptsReached = false
 }) => {
   if (!result) return null;
 
@@ -131,15 +135,15 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
           </div>
         </div>
 
-        {/* Card Comparison */}
-        {!result.isCorrect && (
+        {/* Card Comparison - Only show if answer should be shown */}
+        {!result.isCorrect && showAnswer && (
           <div className="bg-white p-4 rounded-lg border border-gray-200">
             {renderCardComparison()}
           </div>
         )}
 
-        {/* Incorrect Positions Alert */}
-        {!result.isCorrect && result.incorrectPositions.length > 0 && (
+        {/* Incorrect Positions Alert - Only show if not showing full answer */}
+        {!result.isCorrect && !showAnswer && result.incorrectPositions.length > 0 && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
               <AlertCircle className="w-5 h-5 text-yellow-600" />
@@ -150,22 +154,24 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
           </div>
         )}
 
-        {/* Explanation */}
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-start space-x-2">
-            <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="text-sm font-medium text-blue-800 mb-1">
-                Explicação da Sequência Correta:
-              </h4>
-              <p className="text-sm text-blue-700">{explanation}</p>
+        {/* Explanation - Only show if answer should be shown */}
+        {showAnswer && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-medium text-blue-800 mb-1">
+                  Explicação da Sequência Correta:
+                </h4>
+                <p className="text-sm text-blue-700">{explanation}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex space-x-3">
-          {!result.isCorrect && (
+          {!result.isCorrect && !maxAttemptsReached && (
             <button
               onClick={onTryAgain}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -174,7 +180,7 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
             </button>
           )}
           
-          {result.isCorrect && hasNextChallenge && (
+          {(result.isCorrect || maxAttemptsReached) && hasNextChallenge && (
             <button
               onClick={onNextChallenge}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -187,6 +193,15 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
             <div className="text-green-700 font-medium flex items-center space-x-2">
               <span>🏆 Todos os desafios concluídos!</span>
             </div>
+          )}
+
+          {maxAttemptsReached && !result.isCorrect && (
+            <button
+              onClick={onTryAgain}
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Resetar Desafio
+            </button>
           )}
         </div>
       </div>

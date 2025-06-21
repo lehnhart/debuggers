@@ -15,15 +15,19 @@ function App() {
     currentChallenge: 0,
     score: 0,
     attempts: 0,
-    completedChallenges: []
+    completedChallenges: [],
+    challengeAttempts: {}
   });
 
   const [currentSequence, setCurrentSequence] = useState<number[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [inputMethod, setInputMethod] = useState<'visual' | 'numeric'>('visual');
+  const [inputMethod, setInputMethod] = useState<'visual' | 'numeric'>('numeric'); // Changed default to numeric
+  const [showAnswerPrompt, setShowAnswerPrompt] = useState(false);
 
   const currentChallenge = challenges[gameState.currentChallenge];
+  const currentChallengeAttempts = gameState.challengeAttempts[currentChallenge.id] || 0;
+  const maxAttempts = 3;
 
   const validateSequence = (sequence?: number[]) => {
     const sequenceToValidate = sequence || currentSequence;
@@ -47,15 +51,31 @@ function App() {
     const expectedCards = currentChallenge.correctSequence.map(id => getCardById(id)).filter(Boolean);
     const actualCards = sequenceToValidate.map(id => getCardById(id)).filter(Boolean);
 
+    // Update challenge attempts
+    const newChallengeAttempts = currentChallengeAttempts + 1;
+    const attemptsLeft = maxAttempts - newChallengeAttempts;
+
+    let message = '';
+    let showAnswerOption = false;
+
+    if (isCorrect) {
+      message = `Perfeito! Você resolveu o desafio "${currentChallenge.title}" corretamente!`;
+    } else if (newChallengeAttempts >= maxAttempts) {
+      message = `Sequência incorreta. Você esgotou suas ${maxAttempts} tentativas para este desafio.`;
+      showAnswerOption = true;
+    } else {
+      message = `Sequência incorreta. ${incorrectPositions.length} carta(s) precisam ser corrigidas. Você tem ${attemptsLeft} tentativa(s) restante(s).`;
+    }
+
     const result: ValidationResult = {
       isCorrect,
-      message: isCorrect 
-        ? `Perfeito! Você resolveu o desafio "${currentChallenge.title}" corretamente!`
-        : `Sequência incorreta. ${incorrectPositions.length} carta(s) precisam ser corrigidas.`,
+      message,
       correctPositions,
       incorrectPositions,
       expectedCards,
-      actualCards
+      actualCards,
+      attemptsLeft,
+      showAnswerOption
     };
 
     setValidationResult(result);
@@ -76,14 +96,24 @@ function App() {
       score: isCorrect ? prev.score + (100 * difficultyMultiplier) : prev.score,
       completedChallenges: isCorrect && !prev.completedChallenges.includes(currentChallenge.id) 
         ? [...prev.completedChallenges, currentChallenge.id]
-        : prev.completedChallenges
+        : prev.completedChallenges,
+      challengeAttempts: {
+        ...prev.challengeAttempts,
+        [currentChallenge.id]: newChallengeAttempts
+      }
     }));
+
+    // Show answer prompt if max attempts reached and not correct
+    if (!isCorrect && newChallengeAttempts >= maxAttempts) {
+      setShowAnswerPrompt(true);
+    }
   };
 
   const resetChallenge = () => {
     setCurrentSequence([]);
     setValidationResult(null);
     setShowResult(false);
+    setShowAnswerPrompt(false);
   };
 
   const nextChallenge = () => {
@@ -109,13 +139,24 @@ function App() {
       currentChallenge: 0,
       score: 0,
       attempts: 0,
-      completedChallenges: []
+      completedChallenges: [],
+      challengeAttempts: {}
     });
     resetChallenge();
   };
 
   const handleNumericSubmit = (sequence: number[]) => {
     validateSequence(sequence);
+  };
+
+  const showAnswer = () => {
+    setShowAnswerPrompt(false);
+    // The answer will be shown in the ValidationResult component
+  };
+
+  const skipAnswer = () => {
+    setShowAnswerPrompt(false);
+    // Just hide the prompt, don't show the answer
   };
 
   return (
@@ -171,9 +212,14 @@ function App() {
             {/* Current Challenge */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {currentChallenge.title}
-                </h2>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {currentChallenge.title}
+                  </h2>
+                  <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                    Tentativas: {currentChallengeAttempts}/{maxAttempts}
+                  </div>
+                </div>
                 <p className="text-gray-600 mb-4">{currentChallenge.description}</p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="font-semibold text-blue-900 mb-2">Problema:</h3>
@@ -185,7 +231,7 @@ function App() {
               <InputMethodToggle
                 method={inputMethod}
                 onMethodChange={setInputMethod}
-                disabled={showResult && validationResult?.isCorrect === true}
+                disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
               />
 
               {/* Input Methods */}
@@ -199,13 +245,13 @@ function App() {
                     sequence={currentSequence}
                     onSequenceChange={setCurrentSequence}
                     maxCards={currentChallenge.correctSequence.length}
-                    disabled={showResult && validationResult?.isCorrect === true}
+                    disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
                   />
                 ) : (
                   <NumericInput
                     onSequenceSubmit={handleNumericSubmit}
                     expectedLength={currentChallenge.correctSequence.length}
-                    disabled={showResult && validationResult?.isCorrect === true}
+                    disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
                   />
                 )}
               </div>
@@ -213,7 +259,8 @@ function App() {
               {/* Validate Button (only for visual method) */}
               {inputMethod === 'visual' && 
                currentSequence.length === currentChallenge.correctSequence.length && 
-               !showResult && (
+               !showResult && 
+               currentChallengeAttempts < maxAttempts && (
                 <div className="text-center mb-6">
                   <button
                     onClick={() => validateSequence()}
@@ -222,6 +269,32 @@ function App() {
                     <Play className="w-5 h-5" />
                     <span>Validar Sequência</span>
                   </button>
+                </div>
+              )}
+
+              {/* Answer Prompt */}
+              {showAnswerPrompt && (
+                <div className="mb-6 p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <h3 className="text-lg font-semibold text-yellow-800 mb-3">
+                    Você esgotou suas tentativas para este desafio.
+                  </h3>
+                  <p className="text-yellow-700 mb-4">
+                    Deseja ver a resposta correta e a explicação?
+                  </p>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={showAnswer}
+                      className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                    >
+                      Sim, mostrar resposta
+                    </button>
+                    <button
+                      onClick={skipAnswer}
+                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      Não, pular para próximo
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -235,6 +308,8 @@ function App() {
                   hasNextChallenge={gameState.currentChallenge < challenges.length - 1}
                   correctSequence={currentChallenge.correctSequence}
                   userSequence={currentSequence}
+                  showAnswer={!showAnswerPrompt && (validationResult?.isCorrect || validationResult?.showAnswerOption)}
+                  maxAttemptsReached={currentChallengeAttempts >= maxAttempts}
                 />
               )}
             </div>
