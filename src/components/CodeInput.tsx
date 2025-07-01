@@ -59,7 +59,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
           <h3 className="font-semibold text-blue-900">Entrada de Código</h3>
         </div>
         <p className="text-sm text-blue-700 mb-4">
-          Digite os códigos das cartas separados por espaços. Exemplo: A1 4 A1 7 6 5 B1 A1
+          Digite os códigos das cartas separados por espaços. Exemplo: A1 4 B2 7 6
         </p>
         
         <div className="space-y-3">
@@ -70,7 +70,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               disabled={disabled}
-              placeholder={`Digite ${expectedLength} códigos separados por espaços...`}
+              placeholder="Digite os códigos separados por espaços..."
               className={`
                 w-full px-4 py-3 border-2 rounded-lg font-mono text-lg
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -114,7 +114,7 @@ export const CodeInput: React.FC<CodeInputProps> = ({
 
       <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
         <strong>Dica:</strong> Digite os códigos das cartas na sequência correta, separados por espaços. 
-        Os códigos podem conter letras e números (ex: A1, B2, 4, 7, etc.).
+        Este desafio requer {expectedLength} códigos. Os códigos podem conter letras e números (ex: A1, B2, 4, 7, etc.).
       </div>
     </div>
   );
