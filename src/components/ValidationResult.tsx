@@ -26,58 +26,37 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
   const renderCodeComparison = () => {
     return (
       <div className="space-y-4">
-        <h4 className="font-semibold text-gray-800">Comparação de Códigos:</h4>
+        <h4 className="font-semibold text-gray-800">Sua Sequência:</h4>
         
-        <div className="grid gap-4">
-          {/* Expected Sequence */}
-          <div>
-            <h5 className="text-sm font-medium text-green-700 mb-2">Sequência Esperada:</h5>
-            <div className="flex flex-wrap gap-2">
-              {correctSequence.map((code, index) => (
-                <div
-                  key={`correct-${index}`}
-                  className="bg-gradient-to-br from-green-400 to-green-600 text-white px-3 py-2 rounded-lg text-sm font-mono shadow-sm"
-                >
-                  {code}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* User Sequence */}
-          <div>
-            <h5 className="text-sm font-medium text-blue-700 mb-2">Sua Sequência:</h5>
-            <div className="flex flex-wrap gap-2">
-              {userSequence.map((code, index) => {
-                const isCorrect = correctSequence[index] === code;
-                
-                return (
-                  <div
-                    key={`user-${index}`}
-                    className={`
-                      px-3 py-2 rounded-lg text-sm font-mono shadow-sm relative
-                      ${isCorrect 
-                        ? 'bg-gradient-to-br from-green-400 to-green-600 text-white ring-2 ring-green-400' 
-                        : 'bg-gradient-to-br from-red-400 to-red-600 text-white ring-2 ring-red-400'
-                      }
-                    `}
-                  >
-                    {code}
-                    {!isCorrect && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                        <XCircle className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    {isCorrect && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
-                    )}
+        <div className="flex flex-wrap gap-2">
+          {userSequence.map((code, index) => {
+            const isCorrect = correctSequence[index] === code;
+            
+            return (
+              <div
+                key={`user-${index}`}
+                className={`
+                  px-3 py-2 rounded-lg text-sm font-mono shadow-sm relative
+                  ${isCorrect 
+                    ? 'bg-gradient-to-br from-green-400 to-green-600 text-white ring-2 ring-green-400' 
+                    : 'bg-gradient-to-br from-red-400 to-red-600 text-white ring-2 ring-red-400'
+                  }
+                `}
+              >
+                {code}
+                {!isCorrect && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <XCircle className="w-3 h-3 text-white" />
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                )}
+                {isCorrect && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
