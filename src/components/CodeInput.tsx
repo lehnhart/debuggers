@@ -91,15 +91,11 @@ export const CodeInput: React.FC<CodeInputProps> = ({
 
           {error && (
             <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded px-3 py-2">
-              {error}
+              <strong>Dica:</strong> {error}. Este desafio requer {expectedLength} códigos. Os códigos podem conter letras e números (ex: A1, B2, 4, 7, etc.).
             </div>
           )}
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">
-              {inputValue.trim() ? inputValue.trim().split(/\s+/).length : 0}/{expectedLength} códigos
-            </span>
-            
+          <div className="flex justify-end">
             <button
               onClick={handleSubmit}
               disabled={disabled || !inputValue.trim()}
@@ -110,11 +106,6 @@ export const CodeInput: React.FC<CodeInputProps> = ({
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-        <strong>Dica:</strong> Digite os códigos das cartas na sequência correta, separados por espaços. 
-        Este desafio requer {expectedLength} códigos. Os códigos podem conter letras e números (ex: A1, B2, 4, 7, etc.).
       </div>
     </div>
   );
