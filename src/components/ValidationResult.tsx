@@ -1,101 +1,62 @@
 import React from 'react';
 import { ValidationResult as ValidationResultType } from '../types';
-import { getCardById } from '../data/cardTypes';
-import { CheckCircle, XCircle, AlertCircle, Lightbulb, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface ValidationResultProps {
   result: ValidationResultType | null;
-  explanation: string;
   onTryAgain: () => void;
   onNextChallenge: () => void;
   hasNextChallenge: boolean;
-  correctSequence: number[];
-  userSequence: number[];
-  showAnswer?: boolean;
+  correctSequence: string[];
+  userSequence: string[];
   maxAttemptsReached?: boolean;
 }
 
 export const ValidationResult: React.FC<ValidationResultProps> = ({
   result,
-  explanation,
   onTryAgain,
   onNextChallenge,
   hasNextChallenge,
   correctSequence,
   userSequence,
-  showAnswer = false,
   maxAttemptsReached = false
 }) => {
   if (!result) return null;
 
-  const renderCardComparison = () => {
-    const maxLength = Math.max(correctSequence.length, userSequence.length);
-    
+  const renderCodeComparison = () => {
     return (
       <div className="space-y-4">
-        <h4 className="font-semibold text-gray-800">Comparação de Sequências:</h4>
+        <h4 className="font-semibold text-gray-800">Sua Sequência:</h4>
         
-        <div className="grid gap-4">
-          {/* Expected Sequence */}
-          <div>
-            <h5 className="text-sm font-medium text-green-700 mb-2">Sequência Esperada:</h5>
-            <div className="flex flex-wrap gap-2">
-              {correctSequence.map((cardId, index) => {
-                const cardType = getCardById(cardId);
-                if (!cardType) return null;
-                
-                return (
-                  <div
-                    key={`correct-${index}`}
-                    className={`
-                      bg-gradient-to-br ${cardType.bgColor} text-white px-3 py-2 rounded-lg text-xs
-                      flex items-center space-x-2 shadow-sm
-                    `}
-                  >
-                    <span className="font-bold">#{cardType.id}</span>
-                    <span>{cardType.name}</span>
+        <div className="flex flex-wrap gap-2">
+          {userSequence.map((code, index) => {
+            const isCorrect = correctSequence[index] === code;
+            
+            return (
+              <div
+                key={`user-${index}`}
+                className={`
+                  px-3 py-2 rounded-lg text-sm font-mono shadow-sm relative
+                  ${isCorrect 
+                    ? 'bg-gradient-to-br from-green-400 to-green-600 text-white ring-2 ring-green-400' 
+                    : 'bg-gradient-to-br from-red-400 to-red-600 text-white ring-2 ring-red-400'
+                  }
+                `}
+              >
+                {code}
+                {!isCorrect && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <XCircle className="w-3 h-3 text-white" />
                   </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* User Sequence */}
-          <div>
-            <h5 className="text-sm font-medium text-blue-700 mb-2">Sua Sequência:</h5>
-            <div className="flex flex-wrap gap-2">
-              {userSequence.map((cardId, index) => {
-                const cardType = getCardById(cardId);
-                if (!cardType) return null;
-                
-                const isCorrect = correctSequence[index] === cardId;
-                
-                return (
-                  <div
-                    key={`user-${index}`}
-                    className={`
-                      bg-gradient-to-br ${cardType.bgColor} text-white px-3 py-2 rounded-lg text-xs
-                      flex items-center space-x-2 shadow-sm relative
-                      ${!isCorrect ? 'ring-2 ring-red-400' : 'ring-2 ring-green-400'}
-                    `}
-                  >
-                    <span className="font-bold">#{cardType.id}</span>
-                    <span>{cardType.name}</span>
-                    {!isCorrect && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                        <XCircle className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    {isCorrect && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
-                    )}
+                )}
+                {isCorrect && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-3 h-3 text-white" />
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -124,7 +85,7 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
             <h3 className={`text-xl font-bold mb-2 ${
               result.isCorrect ? 'text-green-800' : 'text-red-800'
             }`}>
-              {result.isCorrect ? '🎉 Parabéns!' : '❌ Sequência Incorreta'}
+              {result.isCorrect ? '🎉 Código Correto!' : '❌ Código Incorreto'}
             </h3>
             
             <p className={`text-sm mb-4 ${
@@ -135,36 +96,21 @@ export const ValidationResult: React.FC<ValidationResultProps> = ({
           </div>
         </div>
 
-        {/* Card Comparison - Only show if answer should be shown */}
-        {!result.isCorrect && showAnswer && (
+        {/* Code Comparison - Show when incorrect */}
+        {!result.isCorrect && (
           <div className="bg-white p-4 rounded-lg border border-gray-200">
-            {renderCardComparison()}
+            {renderCodeComparison()}
           </div>
         )}
 
-        {/* Incorrect Positions Alert - Only show if not showing full answer */}
-        {!result.isCorrect && !showAnswer && result.incorrectPositions.length > 0 && (
+        {/* Incorrect Positions Alert */}
+        {!result.isCorrect && result.incorrectPositions.length > 0 && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
               <AlertCircle className="w-5 h-5 text-yellow-600" />
               <span className="text-sm font-medium text-yellow-800">
                 Posições incorretas: {result.incorrectPositions.map(pos => pos + 1).join(', ')}
               </span>
-            </div>
-          </div>
-        )}
-
-        {/* Explanation - Only show if answer should be shown */}
-        {showAnswer && (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-medium text-blue-800 mb-1">
-                  Explicação da Sequência Correta:
-                </h4>
-                <p className="text-sm text-blue-700">{explanation}</p>
-              </div>
             </div>
           </div>
         )}

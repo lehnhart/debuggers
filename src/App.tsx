@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { challenges } from './data/challenges';
 import { GameState, ValidationResult } from './types';
-import { getCardById } from './data/cardTypes';
 import { ChallengeCard } from './components/ChallengeCard';
-import { CardInput } from './components/CardInput';
-import { NumericInput } from './components/NumericInput';
-import { InputMethodToggle } from './components/InputMethodToggle';
+import { CodeInput } from './components/CodeInput';
 import { ValidationResult as ValidationResultComponent } from './components/ValidationResult';
 import { GameStats } from './components/GameStats';
-import { Code, Play, RotateCcw } from 'lucide-react';
+import { Code, RotateCcw } from 'lucide-react';
 
 function App() {
   const [gameState, setGameState] = useState<GameState>({
@@ -19,37 +16,29 @@ function App() {
     challengeAttempts: {}
   });
 
-  const [currentSequence, setCurrentSequence] = useState<number[]>([]);
+  const [currentSequence, setCurrentSequence] = useState<string[]>([]);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [inputMethod, setInputMethod] = useState<'visual' | 'numeric'>('numeric'); // Changed default to numeric
-  const [showAnswerPrompt, setShowAnswerPrompt] = useState(false);
 
   const currentChallenge = challenges[gameState.currentChallenge];
   const currentChallengeAttempts = gameState.challengeAttempts[currentChallenge.id] || 0;
   const maxAttempts = 3;
 
-  const validateSequence = (sequence?: number[]) => {
-    const sequenceToValidate = sequence || currentSequence;
-    
-    if (sequenceToValidate.length === 0) return;
+  const validateSequence = (sequence: string[]) => {
+    if (sequence.length === 0) return;
 
-    const isCorrect = JSON.stringify(sequenceToValidate) === JSON.stringify(currentChallenge.correctSequence);
+    const isCorrect = JSON.stringify(sequence) === JSON.stringify(currentChallenge.correctSequence);
     
     const correctPositions: number[] = [];
     const incorrectPositions: number[] = [];
     
-    sequenceToValidate.forEach((cardId, index) => {
-      if (currentChallenge.correctSequence[index] === cardId) {
+    sequence.forEach((code, index) => {
+      if (currentChallenge.correctSequence[index] === code) {
         correctPositions.push(index);
       } else {
         incorrectPositions.push(index);
       }
     });
-
-    // Get card types for better messaging
-    const expectedCards = currentChallenge.correctSequence.map(id => getCardById(id)).filter(Boolean);
-    const actualCards = sequenceToValidate.map(id => getCardById(id)).filter(Boolean);
 
     // Update challenge attempts
     const newChallengeAttempts = currentChallengeAttempts + 1;
@@ -61,10 +50,10 @@ function App() {
     if (isCorrect) {
       message = `Perfeito! Você resolveu o desafio "${currentChallenge.title}" corretamente!`;
     } else if (newChallengeAttempts >= maxAttempts) {
-      message = `Sequência incorreta. Você esgotou suas ${maxAttempts} tentativas para este desafio.`;
+      message = `Código incorreto. Você esgotou suas ${maxAttempts} tentativas para este desafio.`;
       showAnswerOption = true;
     } else {
-      message = `Sequência incorreta. ${incorrectPositions.length} carta(s) precisam ser corrigidas. Você tem ${attemptsLeft} tentativa(s) restante(s).`;
+      message = `Código incorreto. ${incorrectPositions.length} posição(ões) precisam ser corrigidas. Você tem ${attemptsLeft} tentativa(s) restante(s).`;
     }
 
     const result: ValidationResult = {
@@ -72,19 +61,13 @@ function App() {
       message,
       correctPositions,
       incorrectPositions,
-      expectedCards,
-      actualCards,
       attemptsLeft,
       showAnswerOption
     };
 
     setValidationResult(result);
     setShowResult(true);
-
-    // Update current sequence if it was passed as parameter (from numeric input)
-    if (sequence) {
-      setCurrentSequence(sequence);
-    }
+    setCurrentSequence(sequence);
 
     // Update game state
     const difficultyMultiplier = currentChallenge.difficulty === 'easy' ? 1 : 
@@ -102,18 +85,12 @@ function App() {
         [currentChallenge.id]: newChallengeAttempts
       }
     }));
-
-    // Show answer prompt if max attempts reached and not correct
-    if (!isCorrect && newChallengeAttempts >= maxAttempts) {
-      setShowAnswerPrompt(true);
-    }
   };
 
   const resetChallenge = () => {
     setCurrentSequence([]);
     setValidationResult(null);
     setShowResult(false);
-    setShowAnswerPrompt(false);
   };
 
   const nextChallenge = () => {
@@ -145,20 +122,6 @@ function App() {
     resetChallenge();
   };
 
-  const handleNumericSubmit = (sequence: number[]) => {
-    validateSequence(sequence);
-  };
-
-  const showAnswer = () => {
-    setShowAnswerPrompt(false);
-    // The answer will be shown in the ValidationResult component
-  };
-
-  const skipAnswer = () => {
-    setShowAnswerPrompt(false);
-    // Just hide the prompt, don't show the answer
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto px-4 py-8">
@@ -167,12 +130,12 @@ function App() {
           <div className="flex items-center justify-center space-x-3 mb-4">
             <Code className="w-10 h-10 text-blue-600" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Debuggers - Validar Sequências de Cartas
+              Debuggers - Validação de Códigos
             </h1>
           </div>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Monte sequências lógicas usando cartas de diferentes tipos para resolver desafios algorítmicos! 
-            Cada carta representa um tipo de operação ou dado específico.
+            Valide sequências de códigos de cartas para resolver desafios algorítmicos! 
+            Digite os códigos na ordem correta para completar cada desafio.
           </p>
         </header>
 
@@ -227,88 +190,24 @@ function App() {
                 </div>
               </div>
 
-              {/* Input Method Toggle */}
-              <InputMethodToggle
-                method={inputMethod}
-                onMethodChange={setInputMethod}
-                disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
-              />
-
-              {/* Input Methods */}
+              {/* Code Input */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  {inputMethod === 'visual' ? 'Monte a Sequência de Cartas' : 'Digite a Sequência Numérica'}
-                </h3>
-                
-                {inputMethod === 'visual' ? (
-                  <CardInput
-                    sequence={currentSequence}
-                    onSequenceChange={setCurrentSequence}
-                    maxCards={currentChallenge.correctSequence.length}
-                    disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
-                  />
-                ) : (
-                  <NumericInput
-                    onSequenceSubmit={handleNumericSubmit}
-                    expectedLength={currentChallenge.correctSequence.length}
-                    disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
-                  />
-                )}
+                <CodeInput
+                  onSequenceSubmit={validateSequence}
+                  expectedLength={currentChallenge.correctSequence.length}
+                  disabled={(showResult && validationResult?.isCorrect === true) || currentChallengeAttempts >= maxAttempts}
+                />
               </div>
-
-              {/* Validate Button (only for visual method) */}
-              {inputMethod === 'visual' && 
-               currentSequence.length === currentChallenge.correctSequence.length && 
-               !showResult && 
-               currentChallengeAttempts < maxAttempts && (
-                <div className="text-center mb-6">
-                  <button
-                    onClick={() => validateSequence()}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center space-x-2 mx-auto"
-                  >
-                    <Play className="w-5 h-5" />
-                    <span>Validar Sequência</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Answer Prompt */}
-              {showAnswerPrompt && (
-                <div className="mb-6 p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
-                  <h3 className="text-lg font-semibold text-yellow-800 mb-3">
-                    Você esgotou suas tentativas para este desafio.
-                  </h3>
-                  <p className="text-yellow-700 mb-4">
-                    Deseja ver a resposta correta e a explicação?
-                  </p>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={showAnswer}
-                      className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-                    >
-                      Sim, mostrar resposta
-                    </button>
-                    <button
-                      onClick={skipAnswer}
-                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                      Não, pular para próximo
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Validation Result */}
               {showResult && (
                 <ValidationResultComponent
                   result={validationResult}
-                  explanation={currentChallenge.explanation}
                   onTryAgain={resetChallenge}
                   onNextChallenge={nextChallenge}
                   hasNextChallenge={gameState.currentChallenge < challenges.length - 1}
                   correctSequence={currentChallenge.correctSequence}
                   userSequence={currentSequence}
-                  showAnswer={!showAnswerPrompt && (validationResult?.isCorrect || validationResult?.showAnswerOption)}
                   maxAttemptsReached={currentChallengeAttempts >= maxAttempts}
                 />
               )}
